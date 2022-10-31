@@ -7,4 +7,3 @@ Arrivé à ce stade, vous avez tout ce qu’il faut pour essayer d'injecter du c
 
 1. Montrez des attaques possibles
 1. Corrigez les failles dans le fichier src\controllers\persons-controller.ts.
-
