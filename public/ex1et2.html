@@ -1,0 +1,133 @@
+<html>
+<script>
+    // liste des attaques
+    const attacks = [
+        ['a1', "ga%' union select entreprise nom, sujet prenom, montant age, '' url from CONTRATS--"]
+    ];
+
+    // affichage des personnes . Si le nom est défini la liste des personnes est filtrée
+    async function showPersons(name) {
+        const encodedName = name ? encodeURIComponent(name) : '';
+        let url = './persons';
+        if (name) {
+            url += '?search=' + encodedName;
+        }
+        let res;
+        let fetchErrMsg;
+        try {
+            res = await fetch(url);
+        } catch (e) {
+            fetchErrMsg = e.message || e;
+        }
+        fetchErrMsg = fetchErrMsg || await getError(res);
+        setError(fetchErrMsg);
+        if (fetchErrMsg) {
+            return;
+        }
+        const persons = await res.json();
+        const content = persons.map(p => {
+            const { firstName, lastName, age, photoUrl } = p;
+            const img = photoUrl ? `<img src="${photoUrl}" width="52" height="56" />` : '';
+            const row = `<tr><td>${firstName}</td><td>${lastName}</td><td>${age}</td><td>${img}</td></tr>`;
+            return row;
+        }).join('');
+        document.getElementById("persons").innerHTML = content;
+        const fiche = name ? `<iframe src="/persons/${encodedName}/fiche"/>` : '';
+        document.getElementById('fiche').innerHTML = fiche;
+    }
+    async function getError(res) {
+        if (res.status >= 400) {
+            let err;
+            try {
+                err = await res.json();
+            } catch {
+                err = "err";
+            }
+            return err && err.message ? err.message : 'error';
+        }
+        return null;
+    }
+    function handleSearch() {
+        const value = document.getElementById('searchText').value;
+        showPersons(value).catch((err) => console.log(err));
+    }
+    function handleCreate() {
+        createPerson().catch((err) => console.log(err))
+    }
+    async function createPerson() {
+        const firstName = document.getElementById('firstName').value;
+        const lastName = document.getElementById('lastName').value;
+        let age = parseInt(document.getElementById('age').value);
+        if (!isFinite(age)) {
+            age = 0;
+        }
+        const photoUrl = document.getElementById('photoUrl').value;
+        const res = await fetch('/persons', {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            method: 'POST',
+            body: JSON.stringify({ firstName, lastName, age, photoUrl })
+        });
+        const fetchErrMsg = await getError(res);
+        setError(fetchErrMsg)
+        if (!fetchErrMsg) {
+            await showPersons(lastName);
+        }
+    }
+    function setError(fetchErrMsg) {
+        document.getElementById('errbox').innerHTML = fetchErrMsg || '';
+    }
+    function setSearchText(value) {
+        document.getElementById('searchText').value = value;
+    }
+    function init() {
+        const btns = attacks
+            .map(([attackName, attackText]) =>
+                `<button onclick="setSearchText('${attackText.replaceAll('\'', '\\\'')}')">${attackName}</button><br/>`)
+            .join('\n');
+        document.getElementById('attacks').innerHTML = btns;
+        showPersons().catch((e) => console.log(e));
+    }
+</script>
+
+<body onload="init()">
+    <h1>Annuaire</h1>
+    <div id="errbox"></div>
+    <label for="searchText">Search text</label><br />
+    <input id="searchText" type="text" style="width:800px">
+    <button onclick="handleSearch()">Search</button><br />
+    <div id="attacks"></div>
+
+    <table>
+        <thead>
+            <th>Prénom</th>
+            <th>Nom</th>
+            <th>Age</th>
+            <th>Photo</th>
+        </thead>
+        <tbody id="persons">
+        </tbody>
+    </table>
+    <hr />
+    <div>
+        <label for="firstName">Prénom:</label><br />
+        <input id="firstName" type="text">
+    </div>
+    <div><label for="lastName">Nom</label><br />
+        <input id="lastName" type="text">
+    </div>
+    <div><label for="age">Age</label><br />
+        <input id="age" type="text">
+    </div>
+    <div>
+        <label for="photoUrl">Photo Url</label><br />
+        <input id="photoUrl" type="text">
+    </div>
+    <button onclick="handleCreate()">Ajouter</button>
+    <hr />
+    <div id="fiche"></div>
+</body>
+
+</html>
