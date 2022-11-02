@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.personsRouter = void 0;
 const express = require("express");
 const database_1 = require("../tools/database");
+const http_error_1 = require("../tools/http-error");
 const json_error_middleware_1 = require("../tools/json-error-middleware");
 const server_context_1 = require("../tools/server-context");
 const tools_1 = require("../tools/tools");
@@ -56,10 +57,32 @@ async function createPerson(db, data) {
     await db.runScript(statements);
     return person;
 }
+// async function getPersons(db: Database, nameHint: string, exactMatch = false): Promise<Person[]> {
+//     let sql = 'SELECT P.nom, P.prenom, P.age, I.url FROM PERSONNES P LEFT JOIN PHOTOS I ON I.nom=P.nom'
+//     if (nameHint) {
+//         const where = exactMatch ? `P.nom='${nameHint}'` : `P.nom LIKE '%${nameHint}%'`
+//         sql += ` WHERE ${where}`;
+//     }
+//     const data = await db.select(sql);
+//     const persons: Person[] = data.map((v) => ({
+//         firstName: v.prenom,
+//         lastName: v.nom,
+//         age: v.age,
+//         photoUrl: v.url,
+//     }));
+//     return persons;
+// }
 async function getPersons(db, nameHint, exactMatch = false) {
-    let sql = 'SELECT P.nom, P.prenom, P.age, I.url FROM PERSONNES P LEFT JOIN PHOTOS I ON I.nom=P.nom';
     if (nameHint) {
-        const where = exactMatch ? `P.nom='${nameHint}'` : `P.nom LIKE '%${nameHint}%'`;
+        if (nameHint.length > 32 || nameHint.search('--') >= 0) {
+            throw new http_error_1.HttpError(400, 'Invalid request');
+        }
+    }
+    let sql = 'SELECT P.nom, P.prenom, P.age, I.url FROM PERSONNES P LEFT JOIN PHOTOS I ON I.nom=P.nom';
+    const params = [];
+    if (nameHint) {
+        const where = exactMatch ? 'P.nom=?' : 'P.nom LIKE ?';
+        params.push(exactMatch ? nameHint : `%${nameHint}%`);
         sql += ` WHERE ${where}`;
     }
     const data = await db.select(sql);

